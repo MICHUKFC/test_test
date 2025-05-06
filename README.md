@@ -2,15 +2,14 @@
 
 A new Flutter project.
 
-## Getting Started
+## json-server
 
-This project is a starting point for a Flutter application.
+npm install -g json-server
 
-A few resources to get you started if this is your first Flutter project:
+json-server --watch db.json --port 3000
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Endpoints:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+http://localhost:3000/gallery
+
+

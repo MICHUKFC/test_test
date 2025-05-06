@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -25,73 +27,139 @@ class MyApp extends StatelessWidget {
 }
 
 /// Model danych reprezentujący pojedynczy obiekt pobierany z API.
-/// Przykładowo korzystamy z JSONPlaceholder (zdjęcia).
 class Photo {
   final int id;
   final String title;
-  final String url;           // pełny adres zdjęcia
-  final String thumbnailUrl;  // miniaturka zdjęcia
+  final String url;
+  final String thumbnailUrl;
+
+  /// Trzymamy też surowe dane, żeby je później wyświetlić
+  final Map<String, dynamic> raw;
 
   Photo({
     required this.id,
     required this.title,
     required this.url,
     required this.thumbnailUrl,
+    required this.raw,
   });
 
-  // Fabryczna metoda do tworzenia obiektu z mapy JSON
   factory Photo.fromJson(Map<String, dynamic> json) {
+    // parsujemy to co było
+    final rawId = json['id'];
+    final id = rawId is int
+        ? rawId
+        : int.tryParse(rawId.toString()) ?? 0;
+
     return Photo(
-      id: json['id'],
-      title: json['title'],
-      url: json['url'],
-      thumbnailUrl: json['thumbnailUrl'],
+      id: id,
+      title: json['title'] as String,
+      url: json['url'] as String,
+      thumbnailUrl: json['thumbnailUrl'] as String,
+      raw: json,  // zachowujemy całą mapę
+    );
+  }
+}
+
+class PhotoDetailPage extends StatelessWidget {
+  final Photo photo;
+  const PhotoDetailPage({Key? key, required this.photo}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Zamieniamy surowe dane Map<String,dynamic> na ładnie wcięty JSON
+    final prettyJson = const JsonEncoder.withIndent('  ')
+        .convert(photo.raw);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(photo.title)),
+      body: Column(
+        children: [
+          // 1) Obrazek – pełne zdjęcie
+          Hero(
+            tag: 'photo_${photo.id}',            // ten sam tag co wyżej
+            child: Image.network(
+              photo.url,
+              width: double.infinity,
+              height: 200,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 2) Cały JSON w przewijanym widoku
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  prettyJson,
+                  style: const TextStyle(fontFamily: 'monospace'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 /// Klasa serwisowa obsługująca pobieranie danych z API oraz cache w SharedPreferences.
 class ApiService {
-  // Stała z kluczem zapisu w SharedPreferences
-  static const String _cacheKey = 'photos_cache';
+  static const _baseUrl   = 'http://localhost:3000';
+  static const _cacheKey  = 'photos_cache';
 
-  /// Metoda pobierająca listę obiektów Photo. Jeśli są zapisane
-  /// w SharedPreferences, wczyta je najpierw. Jeśli nie ma zapisu
-  /// lokalnego lub chcemy odświeżyć dane, pobieramy z internetu.
+  /// Pobiera listę Photo:
+  /// - najpierw próbuje z cache’u
+  /// - jeśli nie ma cache’u, GET /gallery → wyciąga gallery.photos → zapisuje do cache’u
   static Future<List<Photo>> fetchPhotos() async {
-    // 1. Odczyt z SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    final cachedData = prefs.getString(_cacheKey);
 
-    // 2. Jeśli mamy dane w cache, możemy je zwrócić od razu,
-    //    wczytując z JSON i parsując na listę obiektów.
-    if (cachedData != null) {
-      final List decoded = jsonDecode(cachedData);
-      final photosFromCache = decoded.map((e) => Photo.fromJson(e)).toList();
-      return photosFromCache;
+    // 1) try cache
+    final cachedJson = prefs.getString(_cacheKey);
+    if (cachedJson != null) {
+      final List<dynamic> decoded = jsonDecode(cachedJson);
+      return decoded.map((e) => Photo.fromJson(e)).toList();
     }
 
-    // 3. Jeśli brak danych w cache, pobieramy z internetu
-    //    (np. z JSONPlaceholder – 50 zdjęć w albumId=1).
-    final url = Uri.parse('https://jsonplaceholder.typicode.com/photos?albumId=1');
-    final response = await http.get(url);
+    // 2) fetch z sieci
+    final uri      = Uri.parse('$_baseUrl/gallery');      // albo '/gallery/photos'
+    final response = await http.get(uri);
 
-    if (response.statusCode == 200) {
-      // Parsujemy listę obiektów
-      final List decoded = jsonDecode(response.body);
+    if (response.statusCode != 200) {
+      throw Exception('Status ${response.statusCode}');
+    }
 
-      // Konwersja do listy Photo
-      final photos = decoded.map((e) => Photo.fromJson(e)).toList();
+    final dynamic decoded = jsonDecode(response.body);
 
-      // Zapisujemy pobrany JSON w cache (SharedPreferences),
-      // aby przy następnym uruchomieniu aplikacji nie pobierać z sieci.
-      await prefs.setString(_cacheKey, response.body);
-
-      return photos;
+    // 3) wyciągamy tablicę photos niezależnie od struktury
+    late final List<dynamic> photosList;
+    if (decoded is Map<String, dynamic> && decoded.containsKey('gallery')) {
+      final gallery = decoded['gallery'];
+      if (gallery is Map<String, dynamic> && gallery['photos'] is List) {
+        photosList = gallery['photos'] as List<dynamic>;
+      } else {
+        throw Exception('Brak pola "gallery.photos" w odpowiedzi');
+      }
+    } else if (decoded is List) {
+      // jeśli endpoint od razu zwraca tablicę
+      photosList = decoded;
     } else {
-      throw Exception('Błąd pobierania danych z API (status ${response.statusCode})');
+      throw Exception('Nieoczekiwana struktura JSON:\n$decoded');
     }
+
+    // 4) cache’ujemy listę zdjęć i zwracamy model
+    await prefs.setString(_cacheKey, jsonEncode(photosList));
+    return photosList.map((e) {
+      if (e is Map<String, dynamic>) {
+        return Photo.fromJson(e);
+      } else {
+        throw Exception('Element listy nie jest Mapą JSON');
+      }
+    }).toList();
   }
+
 }
 
 /// Ekran główny aplikacji – wyświetla listę obiektów Photo pobranych z API lub z cache.
@@ -115,49 +183,50 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Flutter JSON List'),
-      ),
+      appBar: AppBar(title: const Text('Masonry Gallery')),
       body: FutureBuilder<List<Photo>>(
         future: futurePhotos,
         builder: (context, snapshot) {
-          // Jeśli jeszcze trwa pobieranie danych, pokażemy wskaźnik ładowania.
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          // Jeśli wystąpił błąd (np. brak internetu), wyświetlamy komunikat.
-          else if (snapshot.hasError) {
+          if (snapshot.hasError) {
             return Center(child: Text('Błąd: ${snapshot.error}'));
           }
-          // Jeśli brak danych (pusta lista) – informacja na ekranie.
-          else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Brak danych do wyświetlenia.'));
-          }
-          // Jeśli wszystko OK, mamy gotową listę obiektów do wyświetlenia.
-          else {
-            final photos = snapshot.data!; // lista pobranych/keszeowanych obiektów
+          final photos = snapshot.data!;
+          return MasonryGridView.count(
+            padding: const EdgeInsets.all(4),
+            crossAxisCount: 4,         // 4 kolumny „w szerokości”
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 4,
+            itemCount: photos.length,
+            itemBuilder: (context, index) {
+              final photo = photos[index];
+              // wysokość kafelka zależna od indexu (możesz podłożyć własne wartości)
+              final tileHeight = (index % 5 + 1) * 100.0;
 
-            // Wyświetlamy listę elementów w ListView
-            return ListView.builder(
-              itemCount: photos.length,
-              itemBuilder: (context, index) {
-                final photo = photos[index];
-                return ListTile(
-                  // leading – miniaturka zdjęcia
-                  leading: Image.network(
-                    photo.thumbnailUrl,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
+              return GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PhotoDetailPage(photo: photo),
                   ),
-                  title: Text(photo.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  onTap: () {
-                    _showDetailsDialog(photo);
-                  },
-                );
-              },
-            );
-          }
+                ),
+                child: Hero(
+                  tag: 'photo_${photo.id}',
+                  child: Container(
+                    height: tileHeight,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      image: DecorationImage(
+                        image: NetworkImage(photo.thumbnailUrl),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
         },
       ),
     );

@@ -1,0 +1,225 @@
+{
+  "gallery": [
+    {
+      "id": 1,
+      "title": "Zachód słońca nad miastem",
+      "url": "https://picsum.photos/id/1015/600/400",
+      "thumbnailUrl": "https://picsum.photos/id/1015/150/100",
+      "videoUrl": "https://www.example.com/videos/1015.mp4",
+      "metadata": {
+        "author": "Anna Nowak",
+        "likes": 256,
+        "camera": { "make": "Canon", "model": "EOS 80D" }
+      },
+      "tags": ["sunset", "city", "evening"],
+      "comments": [
+        { "user": "Marek", "text": "Piękne światło!" },
+        { "user": "Ola",   "text": "Fantastyczna perspektywa." }
+      ],
+      "exif": {
+        "aperture": "f/2.8",
+        "exposureTime": "1/125",
+        "iso": 200
+      },
+      "location": { "lat": 53.1300, "lng": 23.1600 }
+    },
+    {
+      "id": 2,
+      "title": "Stary most kolejowy",
+      "url": "https://picsum.photos/id/1024/600/400",
+      "thumbnailUrl": "https://picsum.photos/id/1024/150/100",
+      "videoUrl": "https://www.example.com/videos/1024.mp4",
+      "metadata": {
+        "author": "Piotr Zieliński",
+        "likes": 198,
+        "camera": { "make": "Nikon", "model": "D3500" }
+      },
+      "tags": ["bridge", "architecture", "historic"],
+      "comments": [
+        { "user": "Kasia", "text": "Świetny kontrast kolorów." }
+      ],
+      "exif": {
+        "aperture": "f/4.0",
+        "exposureTime": "1/60",
+        "iso": 100
+      },
+      "location": { "lat": 53.1350, "lng": 23.1700 }
+    },
+    {
+      "id": 3,
+      "title": "Poranna mgła w parku",
+      "url": "https://picsum.photos/id/1003/600/400",
+      "thumbnailUrl": "https://picsum.photos/id/1003/150/100",
+      "videoUrl": "https://www.example.com/videos/1003.mp4",
+      "metadata": {
+        "author": "Magda Wiśniewska",
+        "likes": 312,
+        "camera": { "make": "Sony", "model": "Alpha 7 III" }
+      },
+      "tags": ["fog", "morning", "park"],
+      "comments": [
+        { "user": "Tomek", "text": "Ale klimat!" }
+      ],
+      "exif": {
+        "aperture": "f/3.5",
+        "exposureTime": "1/50",
+        "iso": 400
+      },
+      "location": { "lat": 53.1400, "lng": 23.1550 }
+    },
+    {
+      "id": 4,
+      "title": "Ulica nocą",
+      "url": "https://picsum.photos/id/1069/600/400",
+      "thumbnailUrl": "https://picsum.photos/id/1069/150/100",
+      "videoUrl": "https://www.example.com/videos/1069.mp4",
+      "metadata": {
+        "author": "Ewa Kowalczyk",
+        "likes": 145,
+        "camera": { "make": "Fujifilm", "model": "X-T30" }
+      },
+      "tags": ["night", "street", "lights"],
+      "comments": [
+        { "user": "Bartek", "text": "Niesamowity nastrój." }
+      ],
+      "exif": {
+        "aperture": "f/2.0",
+        "exposureTime": "1/30",
+        "iso": 800
+      },
+      "location": { "lat": 53.1250, "lng": 23.1650 }
+    },
+    {
+      "id": 5,
+      "title": "Kolorowe graffiti",
+      "url": "https://picsum.photos/id/1074/600/400",
+      "thumbnailUrl": "https://picsum.photos/id/1074/150/100",
+      "videoUrl": "https://www.example.com/videos/1074.mp4",
+      "metadata": {
+        "author": "Łukasz Mazur",
+        "likes": 289,
+        "camera": { "make": "Olympus", "model": "OM-D E-M10" }
+      },
+      "tags": ["art", "graffiti", "colors"],
+      "comments": [
+        { "user": "Beata", "text": "Super kompozycja!" }
+      ],
+      "exif": {
+        "aperture": "f/4.5",
+        "exposureTime": "1/80",
+        "iso": 200
+      },
+      "location": { "lat": 53.1280, "lng": 23.1720 }
+    },
+    {
+      "id": 6,
+      "title": "Zabytkowy budynek ratusza",
+      "url": "https://picsum.photos/id/1081/600/400",
+      "thumbnailUrl": "https://picsum.photos/id/1081/150/100",
+      "videoUrl": "https://www.example.com/videos/1081.mp4",
+      "metadata": {
+        "author": "Agnieszka Duda",
+        "likes": 334,
+        "camera": { "make": "Panasonic", "model": "Lumix G7" }
+      },
+      "tags": ["architecture", "historic", "building"],
+      "comments": [
+        { "user": "Jacek", "text": "Piękne detale." }
+      ],
+      "exif": {
+        "aperture": "f/5.6",
+        "exposureTime": "1/100",
+        "iso": 100
+      },
+      "location": { "lat": 53.1310, "lng": 23.1690 }
+    },
+    {
+      "id": 7,
+      "title": "Park linowy w lesie",
+      "url": "https://picsum.photos/id/1084/600/400",
+      "thumbnailUrl": "https://picsum.photos/id/1084/150/100",
+      "videoUrl": "https://www.example.com/videos/1084.mp4",
+      "metadata": {
+        "author": "Katarzyna Piotrowska",
+        "likes": 277,
+        "camera": { "make": "GoPro", "model": "Hero9" }
+      },
+      "tags": ["forest", "adventure", "park"],
+      "comments": [
+        { "user": "Arek", "text": "Chętnie bym spróbował!" }
+      ],
+      "exif": {
+        "aperture": "f/2.8",
+        "exposureTime": "1/200",
+        "iso": 160
+      },
+      "location": { "lat": 53.1380, "lng": 23.1620 }
+    },
+    {
+      "id": 8,
+      "title": "Rzeka o poranku",
+      "url": "https://picsum.photos/id/1056/600/400",
+      "thumbnailUrl": "https://picsum.photos/id/1056/150/100",
+      "videoUrl": "https://www.example.com/videos/1056.mp4",
+      "metadata": {
+        "author": "Michał Król",
+        "likes": 310,
+        "camera": { "make": "Pentax", "model": "K-70" }
+      },
+      "tags": ["river", "morning", "water"],
+      "comments": [
+        { "user": "Iwona", "text": "Spokojny widok." }
+      ],
+      "exif": {
+        "aperture": "f/6.3",
+        "exposureTime": "1/60",
+        "iso": 100
+      },
+      "location": { "lat": 53.1330, "lng": 23.1580 }
+    },
+    {
+      "id": 9,
+      "title": "Panorama miasta z wieży",
+      "url": "https://picsum.photos/id/1039/600/400",
+      "thumbnailUrl": "https://picsum.photos/id/1039/150/100",
+      "videoUrl": "https://www.example.com/videos/1039.mp4",
+      "metadata": {
+        "author": "Robert Lewandowski",
+        "likes": 412,
+        "camera": { "make": "Leica", "model": "Q2" }
+      },
+      "tags": ["panorama", "cityscape", "tower"],
+      "comments": [
+        { "user": "Asia", "text": "Wow, rozległy widok!" }
+      ],
+      "exif": {
+        "aperture": "f/8.0",
+        "exposureTime": "1/200",
+        "iso": 100
+      },
+      "location": { "lat": 53.1360, "lng": 23.1670 }
+    },
+    {
+      "id": 10,
+      "title": "Kwiaty w miejskim parku",
+      "url": "https://picsum.photos/id/1023/600/400",
+      "thumbnailUrl": "https://picsum.photos/id/1023/150/100",
+      "videoUrl": "https://www.example.com/videos/1023.mp4",
+      "metadata": {
+        "author": "Sandra Bąk",
+        "likes": 225,
+        "camera": { "make": "Fujifilm", "model": "X100V" }
+      },
+      "tags": ["flowers", "park", "spring"],
+      "comments": [
+        { "user": "Marcin", "text": "Piękne kolory." }
+      ],
+      "exif": {
+        "aperture": "f/2.0",
+        "exposureTime": "1/250",
+        "iso": 200
+      },
+      "location": { "lat": 53.1290, "lng": 23.1610 }
+    }
+  ]
+}
