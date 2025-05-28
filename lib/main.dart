@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -107,7 +109,21 @@ class PhotoDetailPage extends StatelessWidget {
 
 /// Klasa serwisowa obsługująca pobieranie danych z API oraz cache w SharedPreferences.
 class ApiService {
-  static const _baseUrl   = 'http://localhost:3000';
+  static String get _baseUrl {
+    if (kIsWeb) {
+      // Flutter Web – działa w przeglądarce
+      return 'http://localhost:3000';
+    } else if (Platform.isAndroid) {
+      // Android emulator
+      return 'http://10.0.2.2:3000';
+    } else if (Platform.isIOS) {
+      // iOS simulator / urządzenie
+      return 'http://localhost:3000';
+    } else {
+      // Desktop albo inne
+      return 'http://localhost:3000';
+    }
+  }
   static const _cacheKey  = 'photos_cache';
 
   /// Pobiera listę Photo:
