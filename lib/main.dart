@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
 
 
 void main() {
@@ -80,11 +82,13 @@ class PhotoDetailPage extends StatelessWidget {
           // 1) Obrazek – pełne zdjęcie
           Hero(
             tag: 'photo_${photo.id}',            // ten sam tag co wyżej
-            child: Image.network(
-              photo.url,
+            child: CachedNetworkImage(
+              imageUrl: photo.url,
               width: double.infinity,
               height: 200,
               fit: BoxFit.cover,
+              placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
+              errorWidget: (_, __, ___) => const Icon(Icons.error),
             ),
           ),
           const SizedBox(height: 12),
@@ -233,10 +237,15 @@ class _MyHomePageState extends State<MyHomePage> {
                     height: tileHeight,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
-                      image: DecorationImage(
-                        image: NetworkImage(photo.thumbnailUrl),
-                        fit: BoxFit.cover,
+                    ),
+                    clipBehavior: Clip.hardEdge,
+                    child: CachedNetworkImage(
+                      imageUrl: photo.thumbnailUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[300],
                       ),
+                      errorWidget: (context, url, error) => const Icon(Icons.error),
                     ),
                   ),
                 ),
