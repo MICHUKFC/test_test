@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 
 void main() {
@@ -71,21 +71,28 @@ class PhotoDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Zamieniamy surowe dane Map<String,dynamic> na ładnie wcięty JSON
-    final prettyJson = const JsonEncoder.withIndent('  ')
-        .convert(photo.raw);
+    // Mamy dostęp do `photo.raw` jako Map<String, dynamic>
+    final raw = photo.raw;
+
+    // Wyciągamy poszczególne pola (zabezpieczamy, jeśli pola mogłyby być nieobecne):
+    final videoUrl = raw['videoUrl'] as String?;
+    final metadata = raw['metadata'] as Map<String, dynamic>?;
+    final tags = (raw['tags'] as List<dynamic>?)?.cast<String>() ?? [];
+    final comments = (raw['comments'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+    final exif = raw['exif'] as Map<String, dynamic>?;
+    final location = raw['location'] as Map<String, dynamic>?;
 
     return Scaffold(
       appBar: AppBar(title: Text(photo.title)),
       body: Column(
         children: [
-          // 1) Obrazek – pełne zdjęcie
+          // PEŁNE zdjęcie na górze:
           Hero(
-            tag: 'photo_${photo.id}',            // ten sam tag co wyżej
+            tag: 'photo_${photo.id}',
             child: CachedNetworkImage(
               imageUrl: photo.url,
               width: double.infinity,
-              height: 200,
+              height: 240,
               fit: BoxFit.cover,
               placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
               errorWidget: (_, __, ___) => const Icon(Icons.error),
@@ -93,16 +100,168 @@ class PhotoDetailPage extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // 2) Cały JSON w przewijanym widoku
+          // Cała zawartość w pojedynczym scrollowalnym widoku:
           Expanded(
-            child: Padding(
+            child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SingleChildScrollView(
-                child: SelectableText(
-                  prettyJson,
-                  style: const TextStyle(fontFamily: 'monospace'),
+              children: [
+                // ---------- 1) Sekcja wideo  ----------
+                if (videoUrl != null && videoUrl.isNotEmpty)
+                  ExpansionTile(
+                    leading: const Icon(Icons.videocam),
+                    title: const Text('Wideo'),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16, bottom: 8),
+                        child: GestureDetector(
+                          onTap: () {
+                            // Można tu np. otworzyć zewnętrzny odtwarzacz wideo.
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Otwieram wideo: $videoUrl')),
+                            );
+                          },
+                          child: Text(
+                            videoUrl,
+                            style: const TextStyle(
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                // ---------- 2) Sekcja Metadata ----------
+                if (metadata != null)
+                  ExpansionTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: const Text('Metadata'),
+                    children: [
+                      if (metadata['author'] != null)
+                        ListTile(
+                          title: const Text('Autor'),
+                          subtitle: Text(metadata['author'].toString()),
+                        ),
+                      if (metadata['likes'] != null)
+                        ListTile(
+                          title: const Text('Liczba polubień'),
+                          subtitle: Text(metadata['likes'].toString()),
+                        ),
+                      if (metadata['camera'] != null && metadata['camera'] is Map)
+                        ExpansionTile(
+                          leading: const Icon(Icons.camera),
+                          title: const Text('Dane aparatu'),
+                          children: [
+                            ListTile(
+                              title: const Text('Make'),
+                              subtitle: Text(
+                                (metadata['camera'] as Map<String, dynamic>)['make']?.toString() ?? '-',
+                              ),
+                            ),
+                            ListTile(
+                              title: const Text('Model'),
+                              subtitle: Text(
+                                (metadata['camera'] as Map<String, dynamic>)['model']?.toString() ?? '-',
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+
+                // ---------- 3) Sekcja Tags  ----------
+                if (tags.isNotEmpty)
+                  ExpansionTile(
+                    leading: const Icon(Icons.label),
+                    title: const Text('Tagi'),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16, bottom: 8),
+                        child: Wrap(
+                          spacing: 8,
+                          children: tags.map((tag) {
+                            return Chip(label: Text(tag));
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                // ---------- 4) Sekcja Comments ----------
+                if (comments.isNotEmpty)
+                  ExpansionTile(
+                    leading: const Icon(Icons.comment),
+                    title: const Text('Komentarze'),
+                    children: comments.map((commentMap) {
+                      final user = commentMap['user']?.toString() ?? 'Anonim';
+                      final text = commentMap['text']?.toString() ?? '';
+                      return ListTile(
+                        leading: const Icon(Icons.person),
+                        title: Text(user),
+                        subtitle: Text(text),
+                      );
+                    }).toList(),
+                  ),
+
+                // ---------- 5) Sekcja Exif ----------
+                if (exif != null)
+                  ExpansionTile(
+                    leading: const Icon(Icons.photo_camera),
+                    title: const Text('Dane Exif'),
+                    children: [
+                      if (exif['aperture'] != null)
+                        ListTile(
+                          title: const Text('Przysłona'),
+                          subtitle: Text(exif['aperture'].toString()),
+                        ),
+                      if (exif['exposureTime'] != null)
+                        ListTile(
+                          title: const Text('Czas naświetlania'),
+                          subtitle: Text(exif['exposureTime'].toString()),
+                        ),
+                      if (exif['iso'] != null)
+                        ListTile(
+                          title: const Text('ISO'),
+                          subtitle: Text(exif['iso'].toString()),
+                        ),
+                    ],
+                  ),
+
+                // ---------- 6) Sekcja Location ----------
+                if (location != null)
+                  ExpansionTile(
+                    leading: const Icon(Icons.location_on),
+                    title: const Text('Lokalizacja'),
+                    children: [
+                      ListTile(
+                        title: const Text('Szerokość geograficzna'),
+                        subtitle: Text(location['lat']?.toString() ?? '-'),
+                      ),
+                      ListTile(
+                        title: const Text('Długość geograficzna'),
+                        subtitle: Text(location['lng']?.toString() ?? '-'),
+                      ),
+                    ],
+                  ),
+
+                // ---------- 7) Surowy JSON (opcjonalnie) ----------
+                ExpansionTile(
+                  leading: const Icon(Icons.code),
+                  title: const Text('Surowy JSON'),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: SelectableText(
+                        const JsonEncoder.withIndent('  ').convert(raw),
+                        style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+
+                const SizedBox(height: 16),
+              ],
             ),
           ),
         ],
@@ -111,66 +270,72 @@ class PhotoDetailPage extends StatelessWidget {
   }
 }
 
+
 /// Klasa serwisowa obsługująca pobieranie danych z API oraz cache w SharedPreferences.
 class ApiService {
   static String get _baseUrl {
     if (kIsWeb) {
-      // Flutter Web – działa w przeglądarce
       return 'http://localhost:3000';
     } else if (Platform.isAndroid) {
-      // Android emulator
       return 'http://10.0.2.2:3000';
     } else if (Platform.isIOS) {
-      // iOS simulator / urządzenie
       return 'http://localhost:3000';
     } else {
-      // Desktop albo inne
       return 'http://localhost:3000';
     }
   }
-  static const _cacheKey  = 'photos_cache';
 
-  /// Pobiera listę Photo:
-  /// - najpierw próbuje z cache’u
-  /// - jeśli nie ma cache’u, GET /gallery → wyciąga gallery.photos → zapisuje do cache’u
+  static const _cacheKey = 'gallery_cache'; // zmieniona nazwa, bo cache’ujemy całą galerię
+
+  /// Pobiera pełne dane JSON z serwera lub z cache’a.
+  /// Zwraca listę obiektów Photo.
   static Future<List<Photo>> fetchPhotos() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 1) try cache
+    // 1) Spróbuj wczytać cały JSON z cache’a
     final cachedJson = prefs.getString(_cacheKey);
+    Map<String, dynamic>? fullJsonMap;
     if (cachedJson != null) {
-      final List<dynamic> decoded = jsonDecode(cachedJson);
-      return decoded.map((e) => Photo.fromJson(e)).toList();
-    }
-
-    // 2) fetch z sieci
-    final uri      = Uri.parse('$_baseUrl/gallery');      // albo '/gallery/photos'
-    final response = await http.get(uri);
-
-    if (response.statusCode != 200) {
-      throw Exception('Status ${response.statusCode}');
-    }
-
-    final dynamic decoded = jsonDecode(response.body);
-
-    // 3) wyciągamy tablicę photos niezależnie od struktury
-    late final List<dynamic> photosList;
-    if (decoded is Map<String, dynamic> && decoded.containsKey('gallery')) {
-      final gallery = decoded['gallery'];
-      if (gallery is Map<String, dynamic> && gallery['photos'] is List) {
-        photosList = gallery['photos'] as List<dynamic>;
-      } else {
-        throw Exception('Brak pola "gallery.photos" w odpowiedzi');
+      try {
+        fullJsonMap = jsonDecode(cachedJson) as Map<String, dynamic>;
+      } catch (_) {
+        fullJsonMap = null;
       }
-    } else if (decoded is List) {
-      // jeśli endpoint od razu zwraca tablicę
-      photosList = decoded;
-    } else {
-      throw Exception('Nieoczekiwana struktura JSON:\n$decoded');
     }
 
-    // 4) cache’ujemy listę zdjęć i zwracamy model
-    await prefs.setString(_cacheKey, jsonEncode(photosList));
+    if (fullJsonMap == null) {
+      // 2) Cache jest pusty lub niepoprawny – pobierz z sieci
+      final uri = Uri.parse('$_baseUrl/gallery');
+      final response = await http.get(uri);
+
+      if (response.statusCode != 200) {
+        throw Exception('Status ${response.statusCode}');
+      }
+
+      // Zakładam, że endpoint zwraca JSON w postaci: { "gallery": [ ... ] }
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic> && decoded.containsKey('gallery')) {
+        fullJsonMap = decoded;
+      } else if (decoded is List) {
+        // Jeśli endpoint od razu zwraca tablicę zamiast obiektu z kluczem "gallery",
+        // opakowujemy ją w mapę, żeby zachować spójną strukturę:
+        fullJsonMap = {'gallery': decoded};
+      } else {
+        throw Exception('Nieoczekiwana struktura JSON: $decoded');
+      }
+
+      // 3) Cache’ujemy CAŁY obiekt JSON jako String
+      await prefs.setString(_cacheKey, jsonEncode(fullJsonMap));
+    }
+
+    // 4) Z mapy pełnego JSON-a wyciągamy tablicę "gallery":
+    final dynamic galleryField = fullJsonMap['gallery'];
+    if (galleryField is! List) {
+      throw Exception('Pole "gallery" nie jest tablicą');
+    }
+    final photosList = galleryField as List<dynamic>;
+
+    // 5) Budujemy listę obiektów Photo, przekazując im również surową mapę:
     return photosList.map((e) {
       if (e is Map<String, dynamic>) {
         return Photo.fromJson(e);
@@ -180,7 +345,13 @@ class ApiService {
     }).toList();
   }
 
+  /// (Opcjonalnie) Funkcja pomocnicza, żeby wyczyścić cache:
+  static Future<void> clearCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_cacheKey);
+  }
 }
+
 
 /// Ekran główny aplikacji – wyświetla listę obiektów Photo pobranych z API lub z cache.
 class MyHomePage extends StatefulWidget {
@@ -196,8 +367,20 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    // Wywołujemy pobranie/keszeowanie danych w momencie startu ekranu.
     futurePhotos = ApiService.fetchPhotos();
+
+    futurePhotos.then((photos) {
+      // Dla każdego photo wywołujemy precacheImage.
+      // To sprawi, że Flutter pobierze pełny plik JPEG i umieści go w ImageCache (pamięć RAM).
+      for (var photo in photos) {
+        precacheImage(
+          CachedNetworkImageProvider(photo.url),
+          context,
+        );
+      }
+    }).catchError((e) {
+      debugPrint('Błąd w prefetch: $e');
+    });
   }
 
   @override
@@ -216,13 +399,12 @@ class _MyHomePageState extends State<MyHomePage> {
           final photos = snapshot.data!;
           return MasonryGridView.count(
             padding: const EdgeInsets.all(4),
-            crossAxisCount: 4,         // 4 kolumny „w szerokości”
+            crossAxisCount: 4,
             mainAxisSpacing: 4,
             crossAxisSpacing: 4,
             itemCount: photos.length,
             itemBuilder: (context, index) {
               final photo = photos[index];
-              // wysokość kafelka zależna od indexu (możesz podłożyć własne wartości)
               final tileHeight = (index % 5 + 1) * 100.0;
 
               return GestureDetector(
@@ -240,12 +422,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     clipBehavior: Clip.hardEdge,
                     child: CachedNetworkImage(
+                      // Miniaturka i tak pobierze thumbnailUrl
                       imageUrl: photo.thumbnailUrl,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[300],
-                      ),
-                      errorWidget: (context, url, error) => const Icon(Icons.error),
+                      placeholder: (ctx, _) => Container(color: Colors.grey[300]),
+                      errorWidget: (ctx, _, __) => const Icon(Icons.error),
                     ),
                   ),
                 ),
@@ -256,36 +437,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
-
-  /// Funkcja pomocnicza – otwiera okno dialogowe ze szczegółami wybranego obiektu.
-  void _showDetailsDialog(Photo photo) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Photo ID: ${photo.id}'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Większy obraz
-                Image.network(photo.url),
-                const SizedBox(height: 8),
-                Text(
-                  photo.title,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(), // Zamknięcie dialogu
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
+
+
