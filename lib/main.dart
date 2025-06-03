@@ -313,7 +313,7 @@ class ApiService {
       }
 
       // Zakładam, że endpoint zwraca JSON w postaci: { "gallery": [ ... ] }
-      final decoded = jsonDecode(response.body);
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       if (decoded is Map<String, dynamic> && decoded.containsKey('gallery')) {
         fullJsonMap = decoded;
       } else if (decoded is List) {
